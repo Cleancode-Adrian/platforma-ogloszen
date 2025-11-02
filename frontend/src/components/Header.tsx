@@ -17,7 +17,7 @@ const Header = () => {
                 <span className="ml-2 text-xl font-bold text-gray-900">WebFreelance</span>
               </Link>
             </div>
-            <nav className="hidden md:ml-10 md:flex md:space-x-8">
+            <nav className="hidden md:ml-10 lg:flex md:space-x-8">
               <Link to="/announcements" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors">
                 Ogłoszenia
               </Link>
@@ -58,7 +58,7 @@ const Header = () => {
                 </Link>
               </>
             )}
-            <button className="md:hidden text-gray-600 hover:text-gray-900">
+            <button className="lg:hidden text-gray-600 hover:text-gray-900">
               <i className="fa-solid fa-bars text-lg"></i>
             </button>
           </div>

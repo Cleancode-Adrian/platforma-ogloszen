@@ -55,7 +55,7 @@ const Footer = () => {
         <div className="border-t border-gray-800 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-gray-400 text-sm mb-4 md:mb-0">
-              © 2024 WebFreelance. Wszystkie prawa zastrzeżone.
+              © 2025 WebFreelance. Wszystkie prawa zastrzeżone.
             </div>
             <div className="flex space-x-6 text-sm">
               <a href="#" className="text-gray-400 hover:text-white transition-colors">Regulamin</a>
