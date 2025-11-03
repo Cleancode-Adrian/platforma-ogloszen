@@ -57,6 +57,16 @@ class Announcement extends Model
         return $this->belongsToMany(Tag::class, 'announcement_tag');
     }
 
+    public function proposals()
+    {
+        return $this->hasMany(Proposal::class);
+    }
+
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class);
+    }
+
     public function scopePublished($query)
     {
         return $query->where('status', 'published')->where('is_approved', true);

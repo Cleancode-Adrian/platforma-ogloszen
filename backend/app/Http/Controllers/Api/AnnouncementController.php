@@ -79,5 +79,35 @@ class AnnouncementController extends Controller
             'announcement' => $announcement->load(['category', 'tags']),
         ], 201);
     }
+
+    /**
+     * Get current user's announcements
+     */
+    public function myAnnouncements(Request $request): JsonResponse
+    {
+        $announcements = Announcement::where('user_id', $request->user()->id)
+            ->with(['category', 'tags'])
+            ->latest()
+            ->get();
+
+        return response()->json($announcements);
+    }
+
+    /**
+     * Delete announcement
+     */
+    public function destroy(Request $request, string $id): JsonResponse
+    {
+        $announcement = Announcement::findOrFail($id);
+
+        // Only owner or admin can delete
+        if ($announcement->user_id !== $request->user()->id && !$request->user()->isAdmin()) {
+            return response()->json(['message' => 'Brak uprawnień'], 403);
+        }
+
+        $announcement->delete();
+
+        return response()->json(['message' => 'Ogłoszenie usunięte']);
+    }
 }
 

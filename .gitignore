@@ -1,4 +1,4 @@
-# Backend (Laravel)
+# Backend (Laravel + Livewire)
 backend/vendor/
 backend/node_modules/
 backend/.env
@@ -17,15 +17,8 @@ backend/storage/framework/views/*
 backend/bootstrap/cache/*.php
 backend/public/hot
 backend/public/storage
+backend/.vite
 
-# Frontend (React)
-frontend/node_modules/
-frontend/dist/
-frontend/.env
-frontend/.env.local
-frontend/.env.production
-frontend/.vite/
-frontend/coverage/
 
 # IDE
 .idea/
@@ -42,9 +35,4 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # Backup
-backend_old/
-
-# Stare pliki HTML (nie potrzebne już)
-index.html
-single-announcement.html
-account-panel.html
+frontend/
