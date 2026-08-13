@@ -1,14 +1,31 @@
-# Backend (Laravel + Livewire)
+# === Sekrety - nigdy w repozytorium ===
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+auth.json
+
+# === Bazy danych i zrzuty ===
+*.sqlite
+*.sqlite3
+*.db
+*.sql
+*.dump
+ogloszenia_db
+backend/ogloszenia_db
+
+# === Backend (Laravel + Livewire) ===
 backend/vendor/
 backend/node_modules/
-backend/.env
-backend/.env.backup
 backend/.phpunit.result.cache
+backend/.phpunit.cache/
 backend/Homestead.json
 backend/Homestead.yaml
 backend/npm-debug.log
 backend/yarn-error.log
 backend/storage/*.key
+backend/storage/pail
 backend/storage/logs/*.log
 backend/storage/framework/cache/*
 backend/storage/framework/sessions/*
@@ -17,22 +34,28 @@ backend/storage/framework/views/*
 backend/bootstrap/cache/*.php
 backend/public/hot
 backend/public/storage
+backend/public/build
 backend/.vite
 
-
-# IDE
+# === IDE ===
 .idea/
 .vscode/
+.fleet/
+.nova/
+.zed/
 *.swp
 *.swo
 *~
 .DS_Store
 
-# OS
+# === OS ===
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 
-# Backup
+# === Backup / stare katalogi ===
 frontend/
+*.bak
+*.backup
+*.orig

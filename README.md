@@ -1,103 +1,35 @@
-# 🚀 WebFreelance
+# Projekciarz.pl — katalog roboczy
 
-Platforma ogłoszeń łącząca klientów z freelancerami. Publikuj zlecenia, otrzymuj oferty, buduj swoją reputację.
+> **Uwaga: to nie jest repozytorium, które trafia na produkcję.**
 
----
+W tym katalogu istnieją **dwa niezależne repozytoria git**:
 
-## ⚡ Szybki start
+| Katalog | Remote | Rola |
+|---|---|---|
+| `.` (ten) | `platforma-ogloszen` | stary snapshot z listopada 2025, nieaktualny |
+| `backend/` | `nowy-projekt` | **kod produkcyjny projekciarz.pl** |
 
-### Instalacja
+Aplikacja żyje w [backend/](backend/) i tam należy pracować. Na serwerze
+repozytorium `nowy-projekt` jest sklonowane bezpośrednio do
+`/var/www/projekciarz.pl` — bez podkatalogu `backend`.
 
-```bash
-cd backend
-
-# Zainstaluj dependencies (WYŁĄCZ AVAST!)
-composer install
-npm install
-npm run build
-
-# Konfiguracja
-cp .env.example .env
-php artisan key:generate
-php artisan migrate --seed
-php artisan storage:link
-
-# Uruchom
-php artisan serve
-```
-
-Otwórz: **http://localhost:8000**
+Jeśli robisz `git pull` w tym katalogu, **nie pobierasz kodu produkcyjnego**.
 
 ---
 
-## 🎯 Główne funkcje
+## Start
 
-- ✅ Dodawanie i przeglądanie ogłoszeń
-- ✅ System ofert freelancerów
-- ✅ Prywatne wiadomości
-- ✅ Oceny i opinie (gwiazdki)
-- ✅ Portfolio realizacji
-- ✅ Panel administratora
-- ✅ Perfect SEO (Schema.org)
+- Dokumentacja projektu: [backend/README.md](backend/README.md)
+- Wdrożenie i bezpieczeństwo: [backend/BEZPIECZENSTWO.md](backend/BEZPIECZENSTWO.md)
 
 ---
 
-## 🔐 Logowanie
+## Porządki do zrobienia
 
-**Panel administratora:**
-- URL: http://localhost:8000/admin/login
-- Email: `admin@example.com`
-- Hasło: `password`
+Dwa repozytoria w jednym drzewie katalogów to źródło pomyłek — łatwo
+zacommitować zmianę nie tam, gdzie trzeba. Docelowo warto:
 
-⚠️ **ZMIEŃ hasło na produkcji!**
-
----
-
-## 📖 Technologie
-
-**Szczegółowy opis:** `TECH_STACK.md`
-
-**Stack:**
-- Laravel 12 + Livewire 3
-- MySQL 8
-- Tailwind CSS 3.4
-- Alpine.js 3.13
-- Vite 5
-
----
-
-## 🌐 Deployment
-
-**Rekomendacja:** OVH VPS SSD 1 (~25 PLN/m)
-
-### Quick deploy:
-1. Kup VPS
-2. Zainstaluj Ubuntu 22.04 + LEMP
-3. Clone repo
-4. Configure .env
-5. Setup Nginx + SSL
-6. Done!
-
----
-
-## 📊 Performance
-
-- SEO Score: **95-100/100**
-- Speed Index: **~1.5s**
-- First Paint: **~0.5s**
-
----
-
-## 🤝 Contributing
-
-Pull requests are welcome!
-
----
-
-## 📝 License
-
-MIT
-
----
-
-**WebFreelance** - Znajdź idealnego freelancera! 💼
+1. Zweryfikować, czy `platforma-ogloszen` zawiera cokolwiek, czego nie ma
+   w `nowy-projekt` (na oko: nie).
+2. Zarchiwizować `platforma-ogloszen` na GitHubie.
+3. Zostawić w katalogu wyłącznie zawartość `backend/`.
