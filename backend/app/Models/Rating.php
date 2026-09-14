@@ -16,10 +16,15 @@ class Rating extends Model
         'rated_id',
         'rating',
         'comment',
+        'is_approved',
+        'approved_at',
+        'approved_by',
     ];
 
     protected $casts = [
         'rating' => 'integer',
+        'is_approved' => 'boolean',
+        'approved_at' => 'datetime',
     ];
 
     public function announcement(): BelongsTo
@@ -35,6 +40,11 @@ class Rating extends Model
     public function rated(): BelongsTo
     {
         return $this->belongsTo(User::class, 'rated_id');
+    }
+
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     protected static function booted()
@@ -56,8 +66,13 @@ class Rating extends Model
     {
         $user = User::find($this->rated_id);
         if ($user) {
-            $average = Rating::where('rated_id', $this->rated_id)->avg('rating');
-            $count = Rating::where('rated_id', $this->rated_id)->count();
+            // Tylko zaakceptowane opinie
+            $average = Rating::where('rated_id', $this->rated_id)
+                ->where('is_approved', true)
+                ->avg('rating');
+            $count = Rating::where('rated_id', $this->rated_id)
+                ->where('is_approved', true)
+                ->count();
 
             $user->update([
                 'average_rating' => round($average, 2),

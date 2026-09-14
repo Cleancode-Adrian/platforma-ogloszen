@@ -49,7 +49,7 @@ class ProposalForm extends Component
             'description.min' => 'Opis musi mieć minimum 50 znaków',
         ]);
 
-        Proposal::create([
+        $proposal = Proposal::create([
             'announcement_id' => $this->announcement->id,
             'user_id' => auth()->id(),
             'price' => $validated['price'],
@@ -58,6 +58,22 @@ class ProposalForm extends Component
         ]);
 
         $this->announcement->increment('proposals_count');
+
+        // Wysłanie powiadomień
+        \App\Models\Notification::createNotification(
+            $this->announcement->user_id,
+            'new_proposal',
+            'Nowa oferta! 📨',
+            auth()->user()->name . ' wysłał ofertę do "' . $this->announcement->title . '"',
+            route('announcements.proposals', $this->announcement)
+        );
+
+        // Email notification
+        try {
+            \Mail::to($this->announcement->user->email)->send(new \App\Mail\NewProposalMail($proposal));
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send email: ' . $e->getMessage());
+        }
 
         $this->hasProposal = true;
         $this->reset(['price', 'delivery_days', 'description']);

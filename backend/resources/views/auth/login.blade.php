@@ -3,8 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logowanie - WebFreelance</title>
+    <title>Logowanie - Projekciarz.pl</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if(config('services.recaptcha.site_key'))
+    <script src="https://www.google.com/recaptcha/api.js?render={{ config('services.recaptcha.site_key') }}" async defer></script>
+    @endif
 </head>
 <body class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 min-h-screen flex items-center justify-center">
 
@@ -29,14 +32,20 @@
             @endif
 
             {{-- Errors --}}
-            @if($errors->any())
+            @error('email')
                 <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                    {{ $errors->first() }}
+                    {{ $message }}
+                </div>
+            @enderror
+            @if(session('error'))
+                <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                    {{ session('error') }}
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('login') }}" class="space-y-6">
+            <form method="POST" action="{{ route('login') }}" class="space-y-6" id="loginForm">
                 @csrf
+                <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
@@ -64,6 +73,9 @@
                         <input type="checkbox" name="remember" class="w-4 h-4 text-blue-600 border-gray-300 rounded">
                         <span class="ml-2 text-sm text-gray-700">Zapamiętaj mnie</span>
                     </label>
+                    <a href="{{ route('password.request') }}" class="text-sm text-blue-600 hover:text-blue-700">
+                        Zapomniałeś hasła?
+                    </a>
                 </div>
 
                 <button type="submit" class="w-full btn btn-primary">
@@ -73,14 +85,47 @@
 
             <div class="mt-6 text-center">
                 <p class="text-gray-600">
-                    Nie masz konta?{' '}
-                    <a href="{{ route('register') }}" class="text-blue-600 hover:text-blue-700 font-semibold">
+                    Nie masz konta?
+                    <a href="{{ route('register') }}" class="text-blue-600 hover:text-blue-700 font-semibold ml-1">
                         Zarejestruj się
                     </a>
                 </p>
             </div>
         </div>
     </div>
+
+    @if(config('services.recaptcha.site_key'))
+    <script>
+        const siteKey = '{{ config("services.recaptcha.site_key") }}';
+
+        const form = document.getElementById('loginForm');
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                if (typeof grecaptcha === 'undefined') {
+                    e.preventDefault();
+                    alert('Nie udało się załadować reCAPTCHA. Wyłącz blokowanie skryptów (np. AdBlock) i spróbuj ponownie.');
+                    return;
+                }
+
+                e.preventDefault();
+                grecaptcha.ready(function () {
+                    grecaptcha.execute(siteKey, { action: 'login' })
+                        .then(function (token) {
+                            const tokenInput = document.getElementById('g-recaptcha-response');
+                            if (tokenInput) {
+                                tokenInput.value = token;
+                            }
+                            form.submit();
+                        })
+                        .catch(function (error) {
+                            console.error('reCAPTCHA error:', error);
+                            alert('Weryfikacja reCAPTCHA nie powiodła się. Odśwież stronę i spróbuj ponownie.');
+                        });
+                });
+            });
+        }
+    </script>
+    @endif
 </body>
 </html>
 

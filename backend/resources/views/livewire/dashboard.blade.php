@@ -43,17 +43,36 @@
         </div>
 
         {{-- Quick Actions --}}
-        <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-8 mb-8 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-2xl font-bold mb-2">Dodaj nowe ogłoszenie</h2>
-                    <p class="text-blue-100">Znajdź idealnego freelancera dla swojego projektu</p>
+        @if(auth()->user()->isClient())
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-8 mb-8 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-2">Dodaj nowe ogłoszenie</h2>
+                        <p class="text-blue-100">Znajdź idealnego freelancera dla swojego projektu</p>
+                    </div>
+                    <a href="{{ route('announcements.create') }}" class="bg-white text-blue-600 hover:bg-gray-100 px-6 py-3 rounded-lg font-semibold transition-colors">
+                        ➕ Dodaj ogłoszenie
+                    </a>
                 </div>
-                <a href="{{ route('announcements.create') }}" class="bg-white text-blue-600 hover:bg-gray-100 px-6 py-3 rounded-lg font-semibold transition-colors">
-                    ➕ Dodaj ogłoszenie
-                </a>
             </div>
-        </div>
+        @else
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+                    <h3 class="text-xl font-bold mb-2">📋 Przeglądaj projekty</h3>
+                    <p class="text-blue-100 mb-4">Zobacz aktualne zlecenia</p>
+                    <a href="{{ route('announcements.index') }}" class="inline-flex items-center bg-white text-blue-600 hover:bg-gray-100 px-4 py-2 rounded-lg font-semibold transition-colors text-sm">
+                        Zobacz ogłoszenia
+                    </a>
+                </div>
+                <div class="bg-gradient-to-r from-green-600 to-teal-600 rounded-xl shadow-lg p-6 text-white">
+                    <h3 class="text-xl font-bold mb-2">💼 Moje oferty</h3>
+                    <p class="text-green-100 mb-4">Sprawdź status wysłanych propozycji</p>
+                    <a href="{{ route('proposals.index') }}" class="inline-flex items-center bg-white text-green-600 hover:bg-gray-100 px-4 py-2 rounded-lg font-semibold transition-colors text-sm">
+                        Zobacz oferty
+                    </a>
+                </div>
+            </div>
+        @endif
 
         {{-- Announcements Table --}}
         <div class="card">
@@ -90,25 +109,41 @@
                                     <td class="px-4 py-4">
                                         @if($announcement->is_approved && $announcement->status === 'published')
                                             <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">✅ Opublikowane</span>
+                                        @elseif($announcement->status === 'closed')
+                                            <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">🔒 Zamknięte</span>
                                         @elseif($announcement->status === 'rejected')
                                             <span class="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-medium">❌ Odrzucone</span>
                                         @else
                                             <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-medium">⏳ Oczekuje</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-4 text-sm text-gray-600">
-                                        {{ $announcement->proposals_count }}
+                                    <td class="px-4 py-4">
+                                        @if($announcement->proposals_count > 0)
+                                            <span class="inline-flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
+                                                📨 {{ $announcement->proposals_count }}
+                                            </span>
+                                        @else
+                                            <span class="text-gray-400 text-sm">Brak</span>
+                                        @endif
                                     </td>
                                     <td class="px-4 py-4 text-sm text-gray-600">
                                         {{ $announcement->created_at->format('d.m.Y') }}
                                     </td>
                                     <td class="px-4 py-4 text-right">
                                         <div class="flex items-center justify-end gap-2">
+                                            @if($announcement->proposals_count > 0)
+                                                <a href="{{ route('announcements.proposals', $announcement) }}" class="text-green-600 hover:text-green-700 text-sm font-semibold">
+                                                    📨 Oferty ({{ $announcement->proposals_count }})
+                                                </a>
+                                            @endif
                                             @if($announcement->is_approved)
                                                 <a href="{{ route('announcements.show', $announcement) }}" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
                                                     👁️ Zobacz
                                                 </a>
                                             @endif
+                                            <a href="{{ route('announcements.edit', $announcement) }}" class="text-gray-600 hover:text-gray-900 text-sm font-medium">
+                                                ✏️ Edytuj
+                                            </a>
                                             <button wire:click="delete({{ $announcement->id }})"
                                                     wire:confirm="Czy na pewno chcesz usunąć to ogłoszenie?"
                                                     class="text-red-600 hover:text-red-700 text-sm font-medium">
@@ -125,9 +160,9 @@
                 <div class="text-center py-12">
                     <div class="text-6xl mb-4">📝</div>
                     <h3 class="text-xl font-semibold text-gray-900 mb-2">Brak ogłoszeń</h3>
-                    <p class="text-gray-600 mb-6">Dodaj swoje pierwsze ogłoszenie, aby znaleźć freelancera</p>
-                    <a href="{{ route('announcements.create') }}" class="inline-flex items-center btn btn-primary">
-                        ➕ Dodaj ogłoszenie
+                    <p class="text-gray-600 mb-6">Przeglądaj dostępne projekty</p>
+                    <a href="{{ route('announcements.index') }}" class="inline-flex items-center btn btn-primary">
+                        📋 Zobacz ogłoszenia
                     </a>
                 </div>
             @endif

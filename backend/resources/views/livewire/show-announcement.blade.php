@@ -1,3 +1,4 @@
+<div>
 {{-- Breadcrumb --}}
 <section class="bg-white border-b border-gray-100 py-4">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,6 +27,11 @@
                                   style="background-color: {{ $announcement->category->color }}20; color: {{ $announcement->category->color }}">
                                 {{ $announcement->category->name }}
                             </span>
+                            @if($announcement->status === 'closed')
+                                <span class="px-3 py-1 text-sm font-medium rounded-full mr-3 bg-gray-200 text-gray-700">
+                                    🔒 Zamknięte
+                                </span>
+                            @endif
                             <span class="text-sm text-gray-500">
                                 Dodano {{ $announcement->created_at->diffForHumans() }}
                             </span>
@@ -92,31 +98,124 @@
             {{-- Description --}}
             <div class="card mb-6">
                 <h2 class="text-2xl font-bold text-gray-900 mb-6">Opis projektu</h2>
-                <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap">
+                <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
                     {{ $announcement->description }}
                 </div>
             </div>
 
-            {{-- Proposals Section (tylko dla właściciela) --}}
-            @if(auth()->check() && auth()->id() === $announcement->user_id && $announcement->proposals_count > 0)
-                <livewire:proposals-list :announcementId="$announcement->id" />
+            {{-- Attachments --}}
+            @if($announcement->attachments->count() > 0)
+                <div class="card mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">📎 Załączniki ({{ $announcement->attachments->count() }})</h2>
+                    <div class="space-y-3">
+                        @foreach($announcement->attachments as $attachment)
+                            <a href="{{ asset('storage/' . $attachment->file_path) }}"
+                               download="{{ $attachment->original_name }}"
+                               class="flex items-center gap-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                                <i class="fa-solid {{ $attachment->icon }} text-3xl"></i>
+                                <div class="flex-1">
+                                    <p class="font-medium text-gray-900">{{ $attachment->original_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ $attachment->file_size_formatted }}</p>
+                                </div>
+                                <i class="fa-solid fa-download text-blue-600"></i>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Close Announcement Button (for owner and admin) --}}
+            @if(auth()->check() && ($announcement->user_id === auth()->id() || auth()->user()->role === 'admin') && $announcement->status !== 'closed')
+                <div class="card mb-6 bg-yellow-50 border-yellow-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-1">Zarządzanie ogłoszeniem</h3>
+                            <p class="text-sm text-gray-600">Możesz zamknąć to ogłoszenie, jeśli nie jest już aktualne</p>
+                        </div>
+                        <button
+                            wire:click="closeAnnouncement"
+                            wire:confirm="Czy na pewno chcesz zamknąć to ogłoszenie? Nie będzie już widoczne w listach aktywnych."
+                            class="btn bg-yellow-600 hover:bg-yellow-700 text-white">
+                            🔒 Zamknij zlecenie
+                        </button>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Closed Announcement Notice --}}
+            @if($announcement->status === 'closed')
+                <div class="card mb-6 bg-gray-50 border-gray-300">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-lock text-gray-500 text-2xl"></i>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-1">Ogłoszenie zamknięte</h3>
+                            <p class="text-sm text-gray-600">To ogłoszenie zostało zamknięte i nie jest już aktywne</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Proposals Section (dla właściciela i administratora) --}}
+            @if(auth()->check() && (auth()->id() === $announcement->user_id || auth()->user()->role === 'admin'))
+                @if($announcement->proposals_count > 0)
+                    <livewire:proposals-list :announcementId="$announcement->id" />
+                @else
+                    <div class="card bg-blue-50 border-blue-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-1">📨 Otrzymane oferty</h3>
+                                <p class="text-sm text-gray-600">
+                                    @if(auth()->id() === $announcement->user_id)
+                                        Na razie nie otrzymałeś żadnych ofert do tego ogłoszenia
+                                    @else
+                                        To ogłoszenie nie ma jeszcze żadnych ofert
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Link do pełnego widoku ofert --}}
+                @if($announcement->proposals_count > 0)
+                    <div class="card bg-gradient-to-r from-green-50 to-blue-50 border-green-200 mb-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-1">💼 Zarządzaj ofertami</h3>
+                                <p class="text-sm text-gray-600">
+                                    @if(auth()->id() === $announcement->user_id)
+                                        Zobacz wszystkie szczegóły i odpowiedz na oferty
+                                    @else
+                                        Zobacz wszystkie oferty do tego ogłoszenia
+                                    @endif
+                                </p>
+                            </div>
+                            <a href="{{ route('announcements.proposals', $announcement) }}"
+                               class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg">
+                                📨 Zobacz wszystkie oferty ({{ $announcement->proposals_count }})
+                            </a>
+                        </div>
+                    </div>
+                @endif
             @endif
 
             {{-- CTA dla freelancerów --}}
-            @if(auth()->check() && auth()->id() !== $announcement->user_id)
-                <livewire:proposal-form :announcement="$announcement" />
-            @elseif(!auth()->check())
-                <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-8 text-white">
-                    <div class="text-center">
-                        <h3 class="text-2xl font-bold mb-4">Zainteresował Cię ten projekt?</h3>
-                        <p class="text-blue-100 mb-6">
-                            Zaloguj się aby złożyć ofertę do zleceniodawcy
-                        </p>
-                        <a href="{{ route('login') }}" class="inline-flex items-center bg-white text-blue-600 hover:bg-gray-100 px-8 py-3 rounded-lg font-semibold transition-colors">
-                            📧 Zaloguj się i złóż ofertę
-                        </a>
+            @if($announcement->status !== 'closed')
+                @if(auth()->check() && auth()->id() !== $announcement->user_id)
+                    <livewire:proposal-form :announcement="$announcement" />
+                @elseif(!auth()->check())
+                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-8 text-white">
+                        <div class="text-center">
+                            <h3 class="text-2xl font-bold mb-4">Zainteresował Cię ten projekt?</h3>
+                            <p class="text-blue-100 mb-6">
+                                Zaloguj się aby złożyć ofertę do zleceniodawcy
+                            </p>
+                            <a href="{{ route('login') }}" class="inline-flex items-center bg-white text-blue-600 hover:bg-gray-100 px-8 py-3 rounded-lg font-semibold transition-colors">
+                                📧 Zaloguj się i złóż ofertę
+                            </a>
+                        </div>
                     </div>
-                </div>
+                @endif
             @endif
         </div>
 
@@ -157,7 +256,7 @@
                     @if($announcement->user->phone)
                         <div class="flex items-center justify-between">
                             <span class="text-gray-600">Telefon:</span>
-                            <span class="font-medium">{{ $announcement->user->phone }}</span>
+                            <span class="font-medium">{{ $announcement->user->masked_phone }}</span>
                         </div>
                     @endif
                 </div>
@@ -166,10 +265,12 @@
                     @if(auth()->id() !== $announcement->user_id)
                         <div class="space-y-3">
                             <livewire:save-button :announcementId="$announcement->id" :full="true" />
+                            {{-- TODO: Aktywuj gdy messages.show będzie gotowe
                             <a href="{{ route('messages.show', $announcement->user_id) }}"
                                class="block w-full border border-gray-300 hover:border-gray-400 text-gray-700 py-3 px-4 rounded-lg font-medium text-center transition-colors">
                                 💬 Wyślij wiadomość
                             </a>
+                            --}}
                         </div>
                     @endif
                 @endauth
@@ -177,39 +278,49 @@
         </div>
     </div>
 </div>
+</div>
 
 {{-- Schema.org for this announcement --}}
 @push('head')
+@php
+    $isRemote = !$announcement->location || strtolower(trim($announcement->location)) === 'zdalna' || strtolower(trim($announcement->location)) === 'zdalnie';
+    $location = $announcement->location ?? 'Zdalna';
+    $validThroughDate = $announcement->deadline
+        ? \Carbon\Carbon::parse($announcement->deadline)
+        : $announcement->created_at->copy()->addDays(30);
+    $validThrough = $validThroughDate->toIso8601String();
+@endphp
 <script type="application/ld+json">
 {
-    "@context": "https://schema.org",
-    "@type": "JobPosting",
-    "title": "{{ $announcement->title }}",
-    "description": "{{ $announcement->description }}",
+    "@@context": "https://schema.org",
+    "@@type": "JobPosting",
+    "title": "{{ addslashes($announcement->title) }}",
+    "description": "{{ addslashes(strip_tags($announcement->description)) }}",
     "datePosted": "{{ $announcement->created_at->toIso8601String() }}",
+    "validThrough": "{{ $validThrough }}",
     "hiringOrganization": {
-        "@type": "Organization",
-        "name": "{{ $announcement->user->company ?? $announcement->user->name }}"
+        "@@type": "Organization",
+        "name": "{{ addslashes($announcement->user->company ?? $announcement->user->name) }}"
     },
     "jobLocation": {
-        "@type": "Place",
+        "@@type": "Place",
         "address": {
-            "@type": "PostalAddress",
-            "addressLocality": "{{ $announcement->location ?? 'Zdalna' }}"
+            "@@type": "PostalAddress",
+            "addressLocality": "{{ $isRemote ? 'Zdalna' : addslashes($location) }}",
+            "streetAddress": "{{ $isRemote ? '' : '' }}",
+            "addressCountry": "{{ $isRemote ? 'PL' : 'PL' }}"
         }
-    }
-    @if($announcement->budget_min && $announcement->budget_max)
-    ,"baseSalary": {
-        "@type": "MonetaryAmount",
-        "currency": "PLN",
+    },
+    "baseSalary": {
+        "@@type": "MonetaryAmount",
+        "currency": "{{ $announcement->budget_currency ?? 'PLN' }}",
         "value": {
-            "@type": "QuantitativeValue",
-            "minValue": {{ $announcement->budget_min }},
-            "maxValue": {{ $announcement->budget_max }},
+            "@@type": "QuantitativeValue",
+            "minValue": {{ $announcement->budget_min ?? 0 }},
+            "maxValue": {{ $announcement->budget_max ?? ($announcement->budget_min ?? 0) }},
             "unitText": "TOTAL"
         }
     }
-    @endif
 }
 </script>
 @endpush

@@ -44,14 +44,14 @@
                 </div>
 
                 {{-- Proposal Details --}}
-                <div class="grid grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
-                    <div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="text-center sm:text-left">
                         <div class="text-sm text-gray-600">Cena</div>
-                        <div class="text-xl font-bold text-green-600">{{ number_format($proposal->price, 2) }} PLN</div>
+                        <div class="text-lg sm:text-xl font-bold text-green-600">{{ number_format($proposal->price, 2) }} PLN</div>
                     </div>
-                    <div>
+                    <div class="text-center sm:text-left">
                         <div class="text-sm text-gray-600">Termin</div>
-                        <div class="text-xl font-bold text-blue-600">{{ $proposal->delivery_days }} dni</div>
+                        <div class="text-lg sm:text-xl font-bold text-blue-600">{{ $proposal->delivery_days }} dni</div>
                     </div>
                 </div>
 
@@ -63,20 +63,28 @@
                 {{-- Actions --}}
                 @if($proposal->status === 'pending')
                     <div class="flex items-center gap-3 pt-4 border-t border-gray-200">
-                        <button
-                            wire:click="accept({{ $proposal->id }})"
-                            wire:confirm="Zaakceptować tę ofertę? Pozostałe oferty zostaną odrzucone."
-                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                            ✅ Zaakceptuj ofertę
-                        </button>
-                        <button
-                            wire:click="reject({{ $proposal->id }})"
-                            wire:confirm="Odrzucić tę ofertę?"
-                            class="text-red-600 hover:text-red-700 font-medium">
-                            ❌ Odrzuć
-                        </button>
+                        @php
+                            $canManage = $proposal->announcement->user_id === auth()->id();
+                            $isAdmin = auth()->check() && auth()->user()->role === 'admin';
+                        @endphp
+                        @if($canManage)
+                            <button
+                                wire:click="accept({{ $proposal->id }})"
+                                wire:confirm="Zaakceptować tę ofertę? Pozostałe oferty zostaną odrzucone."
+                                class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                                ✅ Zaakceptuj ofertę
+                            </button>
+                            <button
+                                wire:click="reject({{ $proposal->id }})"
+                                wire:confirm="Odrzucić tę ofertę?"
+                                class="text-red-600 hover:text-red-700 font-medium">
+                                ❌ Odrzuć
+                            </button>
+                        @elseif($isAdmin)
+                            <span class="text-sm text-gray-500 italic">Tylko właściciel ogłoszenia może akceptować/odrzucać oferty</span>
+                        @endif
                         <a href="{{ route('messages.show', $proposal->user_id) }}"
-                           class="text-blue-600 hover:text-blue-700 font-medium ml-auto">
+                           class="text-blue-600 hover:text-blue-700 font-medium {{ $canManage ? 'ml-auto' : '' }}">
                             💬 Wyślij wiadomość
                         </a>
                     </div>

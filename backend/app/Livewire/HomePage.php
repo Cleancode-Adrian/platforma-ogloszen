@@ -13,14 +13,26 @@ class HomePage extends Component
     {
         // Cache dla performance
         $categories = Cache::remember('home.categories', 3600, function () {
-            return Category::withCount('announcements')
+            return Category::select('id', 'name', 'slug', 'icon', 'color')
+                ->withCount(['announcements' => function ($query) {
+                    $query->whereIn('status', ['published', 'closed'])->where('is_approved', true);
+                }])
                 ->where('is_active', true)
                 ->orderBy('order')
                 ->get();
         });
 
         $featuredAnnouncements = Cache::remember('home.featured', 600, function () {
-            return Announcement::with(['category', 'user', 'tags'])
+            return Announcement::select([
+                    'id', 'user_id', 'category_id', 'title', 'description',
+                    'budget_min', 'budget_max', 'budget_currency', 'location',
+                    'is_urgent', 'created_at'
+                ])
+                ->with([
+                    'user:id,name,avatar,is_verified',
+                    'category:id,name,color',
+                    'tags:id,name'
+                ])
                 ->published()
                 ->where('is_urgent', true)
                 ->latest()
@@ -28,11 +40,23 @@ class HomePage extends Component
                 ->get();
         });
 
-        $stats = Cache::remember('home.stats', 1800, function () {
+        // Klucz jest wersjonowany: dodanie nowego pola do tablicy statystyk
+        // przy starym kluczu wysypywało stronę główną, dopóki cache nie wygasł.
+        // Zmieniasz kształt tablicy - podbij wersję.
+        $stats = Cache::remember('home.stats.v2', 1800, function () {
+            // Średni budżet liczony z realnych ogłoszeń. Przy małej próbce
+            // nie pokazujemy go wcale - lepiej nic niż liczba wzięta z sufitu.
+            $budgets = Announcement::published()
+                ->whereNotNull('budget_min')
+                ->whereNotNull('budget_max')
+                ->selectRaw('AVG((budget_min + budget_max) / 2) as srednia, COUNT(*) as ile')
+                ->first();
+
             return [
                 'announcements' => Announcement::published()->count(),
                 'freelancers' => \App\Models\User::where('role', 'freelancer')->where('is_approved', true)->count(),
                 'categories' => Category::where('is_active', true)->count(),
+                'avg_budget' => ($budgets && $budgets->ile >= 5) ? (int) round($budgets->srednia / 100) * 100 : null,
             ];
         });
 
@@ -41,8 +65,8 @@ class HomePage extends Component
             'featuredAnnouncements' => $featuredAnnouncements,
             'stats' => $stats,
         ])->layout('layouts.app', [
-            'title' => 'WebFreelance - Znajdź najlepszego freelancera dla swojego projektu',
-            'description' => 'Platforma łącząca klientów z zweryfikowanymi freelancerami. Publikuj zlecenia i otrzymuj oferty od najlepszych specjalistów w branży.',
+            'title' => 'Szukasz wykonawcy strony WWW? Zbierz oferty - Projekciarz.pl',
+            'description' => 'Opisz projekt i otrzymaj oferty od wykonawców stron, sklepów i aplikacji. Porównaj wyceny, portfolio i opinie. Publikacja zlecenia jest bezpłatna.',
         ]);
     }
 }

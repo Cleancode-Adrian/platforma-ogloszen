@@ -37,6 +37,9 @@ backend/public/storage
 backend/public/build
 backend/.vite
 
+# === Narzędzia AI / lokalna konfiguracja ===
+.claude/
+
 # === IDE ===
 .idea/
 .vscode/

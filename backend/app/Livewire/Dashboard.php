@@ -19,13 +19,14 @@ class Dashboard extends Component
     {
         $this->announcements = Announcement::where('user_id', auth()->id())
             ->with(['category', 'tags'])
+            ->withCount('proposals')
             ->latest()
             ->get();
 
         $this->stats = [
             'total' => $this->announcements->count(),
             'pending' => $this->announcements->where('is_approved', false)->where('status', 'pending')->count(),
-            'approved' => $this->announcements->where('is_approved', true)->where('status', 'published')->count(),
+            'approved' => $this->announcements->where('is_approved', true)->whereIn('status', ['published', 'closed'])->count(),
             'rejected' => $this->announcements->where('status', 'rejected')->count(),
         ];
     }
@@ -47,7 +48,7 @@ class Dashboard extends Component
     public function render()
     {
         return view('livewire.dashboard')->layout('layouts.app', [
-            'title' => 'Panel użytkownika - WebFreelance',
+            'title' => 'Panel użytkownika - Projekciarz.pl',
         ]);
     }
 }

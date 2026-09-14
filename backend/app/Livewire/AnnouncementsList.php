@@ -45,11 +45,19 @@ class AnnouncementsList extends Component
 
     public function render()
     {
-        $query = Announcement::with(['user', 'category', 'tags'])
+        $query = Announcement::select([
+                'id', 'user_id', 'category_id', 'title', 'description',
+                'budget_min', 'budget_max', 'budget_currency', 'location',
+                'deadline', 'is_urgent', 'created_at', 'views_count', 'proposals_count'
+            ])
+            ->with([
+                'user:id,name,avatar,is_verified',
+                'category:id,name,slug,color,icon',
+                'tags:id,name'
+            ])
             ->published()
             ->latest();
 
-        // Search filter
         if ($this->search) {
             $query->where(function ($q) {
                 $q->where('title', 'like', "%{$this->search}%")
@@ -57,14 +65,10 @@ class AnnouncementsList extends Component
             });
         }
 
-        // Category filter
         if ($this->category) {
-            $query->whereHas('category', function ($q) {
-                $q->where('slug', $this->category);
-            });
+            $query->whereHas('category', fn($q) => $q->where('slug', $this->category));
         }
 
-        // Budget filters
         if ($this->minBudget) {
             $query->where('budget_min', '>=', $this->minBudget);
         }
@@ -72,23 +76,23 @@ class AnnouncementsList extends Component
             $query->where('budget_max', '<=', $this->maxBudget);
         }
 
-        // Tags filter
         if (!empty($this->selectedTags)) {
-            $query->whereHas('tags', function ($q) {
-                $q->whereIn('tags.id', $this->selectedTags);
-            });
+            $query->whereHas('tags', fn($q) => $q->whereIn('tags.id', $this->selectedTags));
         }
 
         $announcements = $query->paginate(12);
-        $categories = Category::where('is_active', true)->orderBy('order')->get();
-        $tags = Tag::orderBy('name')->get();
+        $categories = Category::select('id', 'name', 'slug', 'color', 'icon')
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->get();
+        $tags = Tag::select('id', 'name')->orderBy('name')->get();
 
         return view('livewire.announcements-list', [
             'announcements' => $announcements,
             'categories' => $categories,
             'tags' => $tags,
         ])->layout('layouts.app', [
-            'title' => 'Przeglądaj ogłoszenia - WebFreelance',
+            'title' => 'Przeglądaj ogłoszenia - Projekciarz.pl',
             'description' => 'Znajdź idealne zlecenie dla siebie. Setki projektów czeka na freelancerów takich jak Ty.',
         ]);
     }

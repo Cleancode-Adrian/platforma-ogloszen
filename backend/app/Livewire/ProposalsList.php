@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Proposal;
+use App\Models\Announcement;
 use Livewire\Component;
 
 class ProposalsList extends Component
@@ -10,15 +11,27 @@ class ProposalsList extends Component
     public $announcementId;
     public $proposals;
 
-    public function mount()
+    public function mount($announcementId)
     {
+        $this->announcementId = $announcementId;
+
+        // Sprawdź uprawnienia - właściciel ogłoszenia lub administrator może zobaczyć oferty
+        $announcement = Announcement::findOrFail($this->announcementId);
+
+        $isOwner = auth()->check() && $announcement->user_id === auth()->id();
+        $isAdmin = auth()->check() && auth()->user()->role === 'admin';
+
+        if (!auth()->check() || (!$isOwner && !$isAdmin)) {
+            abort(403, 'Brak dostępu do ofert tego ogłoszenia');
+        }
+
         $this->loadProposals();
     }
 
     public function loadProposals()
     {
         $this->proposals = Proposal::where('announcement_id', $this->announcementId)
-            ->with('freelancer')
+            ->with(['freelancer', 'announcement'])
             ->latest()
             ->get();
     }
@@ -27,8 +40,9 @@ class ProposalsList extends Component
     {
         $proposal = Proposal::findOrFail($proposalId);
 
+        // Tylko właściciel ogłoszenia może akceptować oferty (nie administrator)
         if ($proposal->announcement->user_id !== auth()->id()) {
-            $this->dispatch('notify', message: 'Brak uprawnień', type: 'error');
+            $this->dispatch('notify', message: 'Tylko właściciel ogłoszenia może akceptować oferty', type: 'error');
             return;
         }
 
@@ -51,8 +65,9 @@ class ProposalsList extends Component
     {
         $proposal = Proposal::findOrFail($proposalId);
 
+        // Tylko właściciel ogłoszenia może odrzucać oferty (nie administrator)
         if ($proposal->announcement->user_id !== auth()->id()) {
-            $this->dispatch('notify', message: 'Brak uprawnień', type: 'error');
+            $this->dispatch('notify', message: 'Tylko właściciel ogłoszenia może odrzucać oferty', type: 'error');
             return;
         }
 

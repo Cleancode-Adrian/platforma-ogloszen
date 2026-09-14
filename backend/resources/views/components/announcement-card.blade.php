@@ -4,10 +4,17 @@
     <div class="p-6">
         {{-- Header --}}
         <div class="flex items-center justify-between mb-4">
-            <span class="text-xs font-medium px-3 py-1 rounded-full"
-                  style="background-color: {{ $announcement->category->color }}20; color: {{ $announcement->category->color }}">
-                {{ $announcement->category->name }}
-            </span>
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-medium px-3 py-1 rounded-full"
+                      style="background-color: {{ $announcement->category->color }}20; color: {{ $announcement->category->color }}">
+                    {{ $announcement->category->name }}
+                </span>
+                @if($announcement->status === 'closed')
+                    <span class="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-700">
+                        🔒 Zamknięte
+                    </span>
+                @endif
+            </div>
             <span class="text-sm text-gray-500">
                 {{ $announcement->created_at->diffForHumans() }}
             </span>
@@ -67,13 +74,13 @@
                 <span class="text-sm text-gray-600">{{ $announcement->user->name }}</span>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-shrink-0">
                 @auth
                     <livewire:save-button :announcementId="$announcement->id" :key="'save-'.$announcement->id" />
                 @endauth
 
                 <a href="{{ route('announcements.show', $announcement) }}"
-                   class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                   class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0">
                     Zobacz szczegóły
                 </a>
             </div>

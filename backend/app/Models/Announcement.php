@@ -7,10 +7,34 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Cache;
 
 class Announcement extends Model
 {
     use HasFactory, SoftDeletes;
+
+    /**
+     * Klucze cache'a strony głównej. Muszą być zgodne z App\Livewire\HomePage -
+     * rozjazd oznacza, że statystyki nie odświeżają się po dodaniu ogłoszenia.
+     */
+    public const HOME_CACHE_KEYS = [
+        'home.categories',
+        'home.featured',
+        'home.stats.v2',
+    ];
+
+    protected static function booted()
+    {
+        static::saved(fn () => static::forgetHomeCache());
+        static::deleted(fn () => static::forgetHomeCache());
+    }
+
+    public static function forgetHomeCache(): void
+    {
+        foreach (self::HOME_CACHE_KEYS as $key) {
+            Cache::forget($key);
+        }
+    }
 
     protected $fillable = [
         'user_id',
@@ -20,6 +44,8 @@ class Announcement extends Model
         'budget_min',
         'budget_max',
         'budget_currency',
+        'hourly_rate_min',
+        'hourly_rate_max',
         'deadline',
         'location',
         'status',
@@ -36,6 +62,8 @@ class Announcement extends Model
         return [
             'budget_min' => 'decimal:2',
             'budget_max' => 'decimal:2',
+            'hourly_rate_min' => 'decimal:2',
+            'hourly_rate_max' => 'decimal:2',
             'is_approved' => 'boolean',
             'is_urgent' => 'boolean',
             'approved_at' => 'datetime',
@@ -67,9 +95,14 @@ class Announcement extends Model
         return $this->hasMany(Rating::class);
     }
 
+    public function attachments()
+    {
+        return $this->hasMany(AnnouncementAttachment::class);
+    }
+
     public function scopePublished($query)
     {
-        return $query->where('status', 'published')->where('is_approved', true);
+        return $query->whereIn('status', ['published', 'closed'])->where('is_approved', true);
     }
 
     public function scopePending($query)

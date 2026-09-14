@@ -47,27 +47,35 @@
                     <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                 @enderror
                 <p class="text-xs text-gray-500 mt-1">
-                    @if($delivery_days)
-                        Realizacja do: {{ now()->addDays($delivery_days)->format('d.m.Y') }}
+                    @if($delivery_days && is_numeric($delivery_days))
+                        Realizacja do: {{ now()->addDays((int)$delivery_days)->format('d.m.Y') }}
                     @endif
                 </p>
             </div>
 
             {{-- Description --}}
-            <div>
+            <div x-data="{ charCount: {{ strlen($description) }} }">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                     Opis oferty * (min. 50 znaków)
                 </label>
                 <textarea
                     wire:model="description"
+                    x-on:input="charCount = $event.target.value.length"
                     rows="6"
                     placeholder="Opisz jak zrealizujesz ten projekt, Twoje doświadczenie, portfolio..."
                     class="input"
+                    maxlength="2000"
                     required></textarea>
                 @error('description')
                     <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                 @enderror
-                <p class="text-xs text-gray-500 mt-1">{{ strlen($description) }}/2000 znaków</p>
+                <p class="text-xs mt-1"
+                   :class="charCount < 50 ? 'text-red-600' : 'text-gray-500'">
+                    <span x-text="charCount"></span>/2000 znaków
+                    <span x-show="charCount < 50" class="font-semibold">
+                        (minimum 50 znaków)
+                    </span>
+                </p>
             </div>
 
             {{-- Submit --}}

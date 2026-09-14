@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Announcement;
+use App\Models\Rating;
 use App\Mail\UserApprovedMail;
 use App\Mail\AnnouncementApprovedMail;
+use App\Mail\NewAnnouncementForFreelancersMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -24,6 +26,8 @@ class AdminController extends Controller
             'pending_users' => User::where('is_approved', false)->count(),
             'total_announcements' => Announcement::count(),
             'pending_announcements' => Announcement::where('is_approved', false)->count(),
+            'total_ratings' => Rating::count(),
+            'pending_ratings' => Rating::where('is_approved', false)->count(),
         ];
 
         return view('admin.dashboard', compact('stats'));
@@ -115,7 +119,10 @@ class AdminController extends Controller
 
     public function announcements()
     {
-        $announcements = Announcement::with(['user', 'category'])->latest()->paginate(20);
+        $announcements = Announcement::with(['user', 'category'])
+            ->withCount('proposals')
+            ->latest()
+            ->paginate(20);
         return view('admin.announcements', compact('announcements'));
     }
 
@@ -127,36 +134,96 @@ class AdminController extends Controller
 
     public function updateAnnouncement(Request $request, $id)
     {
-        $announcement = Announcement::findOrFail($id);
+        $announcement = Announcement::with(['user', 'category', 'tags'])->findOrFail($id);
+        $wasPublished = $announcement->status === 'published' && $announcement->is_approved;
+
+        $status = $request->status;
+
+        // Jeśli status to "closed" lub "published", ogłoszenie MUSI być zatwierdzone i widoczne
+        // Jeśli status to "rejected", ogłoszenie nie może być zatwierdzone
+        if ($status === 'closed' || $status === 'published') {
+            $isApproved = true; // Zamknięte i opublikowane muszą być zatwierdzone
+        } elseif ($status === 'rejected') {
+            $isApproved = false; // Odrzucone nie mogą być zatwierdzone
+        } else {
+            // Dla innych statusów (pending, draft) używamy wartości z checkboxa
+            $isApproved = $request->has('is_approved');
+        }
 
         $announcement->update([
-            'is_approved' => $request->has('is_approved'),
-            'status' => $request->status,
+            'is_approved' => $isApproved,
+            'status' => $status,
             'is_urgent' => $request->has('is_urgent'),
-            'rejection_reason' => $request->rejection_reason,
-            'approved_at' => $request->has('is_approved') ? now() : null,
+            'rejection_reason' => $status === 'rejected' ? $request->rejection_reason : null,
+            'approved_at' => $isApproved ? ($announcement->approved_at ?? now()) : null,
         ]);
+
+        // Send notifications if announcement is being published for the first time
+        if ($status === 'published' && $isApproved && !$wasPublished) {
+            // Send email notification to client
+            try {
+                Mail::to($announcement->user->email)->send(new AnnouncementApprovedMail($announcement));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send announcement approval email: ' . $e->getMessage());
+            }
+
+            // Send email notification to all approved freelancers
+            try {
+                $freelancers = User::where('role', 'freelancer')
+                    ->where('is_approved', true)
+                    ->where('email_verified_at', '!=', null)
+                    ->get();
+
+                foreach ($freelancers as $freelancer) {
+                    try {
+                        Mail::to($freelancer->email)->send(new NewAnnouncementForFreelancersMail($announcement));
+                    } catch (\Exception $e) {
+                        \Log::warning('Failed to send announcement email to freelancer ' . $freelancer->email . ': ' . $e->getMessage());
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to send announcement notifications to freelancers: ' . $e->getMessage());
+            }
+        }
 
         return redirect()->route('admin.announcements')->with('success', 'Ogłoszenie zaktualizowane!');
     }
 
     public function approveAnnouncement($id)
     {
-        $announcement = Announcement::with('user', 'category')->findOrFail($id);
+        $announcement = Announcement::with(['user', 'category', 'tags'])->findOrFail($id);
         $announcement->update([
             'is_approved' => true,
             'status' => 'published',
             'approved_at' => now(),
         ]);
 
-        // Send email notification
+        // Send email notification to client
         try {
             Mail::to($announcement->user->email)->send(new AnnouncementApprovedMail($announcement));
         } catch (\Exception $e) {
             \Log::error('Failed to send announcement approval email: ' . $e->getMessage());
         }
 
-        return back()->with('success', 'Ogłoszenie zatwierdzone i opublikowane!');
+        // Send email notification to all approved freelancers
+        try {
+            $freelancers = User::where('role', 'freelancer')
+                ->where('is_approved', true)
+                ->where('email_verified_at', '!=', null)
+                ->get();
+
+            foreach ($freelancers as $freelancer) {
+                try {
+                    Mail::to($freelancer->email)->send(new NewAnnouncementForFreelancersMail($announcement));
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to send announcement email to freelancer ' . $freelancer->email . ': ' . $e->getMessage());
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to send announcement notifications to freelancers: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Ogłoszenie zatwierdzone i opublikowane! Powiadomienia wysłane do freelancerów.');
     }
 
     public function rejectAnnouncement(Request $request, $id)
