@@ -12,6 +12,13 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,
             CategorySeeder::class,
             TagSeeder::class,
+            BadgeSeeder::class,
+            PageSeeder::class,
+            BlogPostSeeder::class,
+            AutomationBlogPostsSeeder::class,
+            BlogPostPricingSeeder::class,
+            BlogPostBriefSeeder::class,
+            BlogScheduleSeeder::class,
         ]);
     }
 }
