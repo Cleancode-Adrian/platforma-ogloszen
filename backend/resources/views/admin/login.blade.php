@@ -3,8 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admina - Logowanie</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Panel Admina - Logowanie | Projekciarz.pl</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    @vite(['resources/css/app.css'])
+    @if(config('services.recaptcha.site_key'))
+        <script src="https://www.google.com/recaptcha/api.js?render={{ config('services.recaptcha.site_key') }}" async defer></script>
+    @endif
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
@@ -12,8 +17,8 @@
     <div class="w-full max-w-md">
         <div class="bg-white rounded-2xl shadow-xl p-8">
             <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-                    🔐
+                <div class="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <i class="fa-solid fa-code text-white text-3xl"></i>
                 </div>
                 <h2 class="text-3xl font-bold text-gray-900 mb-2">Panel Admina</h2>
                 <p class="text-gray-600">Zaloguj się aby zarządzać platformą</p>
@@ -25,8 +30,9 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('admin.login.post') }}" class="space-y-6">
+            <form method="POST" action="{{ route('admin.login.post') }}" class="space-y-6" id="adminLoginForm">
                 @csrf
+                <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
@@ -54,14 +60,40 @@
                     🔓 Zaloguj się
                 </button>
             </form>
-
-            <div class="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <p class="text-sm text-blue-900 font-semibold mb-2">Dane testowe admina:</p>
-                <p class="text-sm text-blue-800">Email: admin@example.com</p>
-                <p class="text-sm text-blue-800">Hasło: password</p>
-            </div>
         </div>
     </div>
+
+    @if(config('services.recaptcha.site_key'))
+        <script>
+            const siteKey = '{{ config("services.recaptcha.site_key") }}';
+            const form = document.getElementById('adminLoginForm');
+
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    if (typeof grecaptcha === 'undefined') {
+                        e.preventDefault();
+                        alert('Nie udało się załadować reCAPTCHA. Wyłącz blokowanie skryptów (np. AdBlock) i spróbuj ponownie.');
+                        return;
+                    }
+
+                    e.preventDefault();
+                    grecaptcha.ready(function () {
+                        grecaptcha.execute(siteKey, { action: 'admin_login' })
+                            .then(function (token) {
+                                const tokenInput = document.getElementById('g-recaptcha-response');
+                                if (tokenInput) {
+                                    tokenInput.value = token;
+                                }
+                                form.submit();
+                            })
+                            .catch(function () {
+                                alert('Weryfikacja reCAPTCHA nie powiodła się. Odśwież stronę i spróbuj ponownie.');
+                            });
+                    });
+                });
+            }
+        </script>
+    @endif
 </body>
 </html>
 

@@ -3,35 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admina - Platforma Ogłoszeń</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Panel Admina - Projekciarz.pl</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Inter', sans-serif; }</style>
+    @vite(['resources/css/app.css', 'resources/js/admin.js'])
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .card { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem; }
+    </style>
 </head>
 <body class="bg-gray-50">
     <div class="min-h-screen flex">
         <!-- Sidebar -->
-        <aside class="w-64 bg-gray-900 text-white flex flex-col">
-            <div class="p-6 border-b border-gray-800">
-                <h1 class="text-xl font-bold">Panel Admina</h1>
-                <p class="text-sm text-gray-400">{{ auth()->user()->name }}</p>
+        <aside class="w-64 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white flex flex-col shadow-2xl">
+            <div class="p-6 border-b border-gray-700">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-code text-white"></i>
+                    </div>
+                    <h1 class="text-xl font-bold">Projekciarz.pl</h1>
+                </div>
+                <div class="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-2">
+                    <div class="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-sm font-bold">
+                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold truncate">{{ auth()->user()->name }}</p>
+                        <p class="text-xs text-gray-400">Administrator</p>
+                    </div>
+                </div>
             </div>
             <nav class="flex-1 p-4">
-                <a href="{{ route('admin.dashboard') }}" class="block px-4 py-3 rounded-lg mb-2 {{ request()->routeIs('admin.dashboard') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    📊 Dashboard
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-4">Menu główne</p>
+
+                <a href="{{ route('admin.dashboard') }}"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all {{ request()->routeIs('admin.dashboard') ? 'bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg' : 'hover:bg-gray-800 hover:translate-x-1' }}">
+                    <i class="fa-solid fa-chart-line w-5"></i>
+                    <span class="font-medium">Dashboard</span>
                 </a>
-                <a href="{{ route('admin.users') }}" class="block px-4 py-3 rounded-lg mb-2 {{ request()->routeIs('admin.users*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    👥 Użytkownicy
+
+                <a href="{{ route('admin.users.index') }}"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all {{ request()->routeIs('admin.users*') ? 'bg-gradient-to-r from-green-600 to-green-500 shadow-lg' : 'hover:bg-gray-800 hover:translate-x-1' }}">
+                    <i class="fa-solid fa-users w-5"></i>
+                    <span class="font-medium">Użytkownicy</span>
                 </a>
-                <a href="{{ route('admin.announcements') }}" class="block px-4 py-3 rounded-lg mb-2 {{ request()->routeIs('admin.announcements*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    📢 Ogłoszenia
+
+                <a href="{{ route('admin.announcements') }}"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all {{ request()->routeIs('admin.announcements*') ? 'bg-gradient-to-r from-orange-600 to-orange-500 shadow-lg' : 'hover:bg-gray-800 hover:translate-x-1' }}">
+                    <i class="fa-solid fa-bullhorn w-5"></i>
+                    <span class="font-medium">Ogłoszenia</span>
+                </a>
+
+                <a href="{{ route('admin.blog.index') }}"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all {{ request()->routeIs('admin.blog*') && !request()->routeIs('admin.blog.generator*') ? 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg' : 'hover:bg-gray-800 hover:translate-x-1' }}">
+                    <i class="fa-solid fa-newspaper w-5"></i>
+                    <span class="font-medium">Blog</span>
+                </a>
+
+                <a href="{{ route('admin.blog.generator') }}"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all {{ request()->routeIs('admin.blog.generator*') ? 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg' : 'hover:bg-gray-800 hover:translate-x-1' }}">
+                    <i class="fa-solid fa-robot w-5"></i>
+                    <span class="font-medium">Generator AI</span>
+                </a>
+
+                <a href="{{ route('admin.pages.index') }}"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all {{ request()->routeIs('admin.pages*') ? 'bg-gradient-to-r from-indigo-600 to-blue-600 shadow-lg' : 'hover:bg-gray-800 hover:translate-x-1' }}">
+                    <i class="fa-solid fa-file-lines w-5"></i>
+                    <span class="font-medium">Strony</span>
+                </a>
+
+                <a href="{{ route('admin.media.index') }}"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all {{ request()->routeIs('admin.media*') ? 'bg-gradient-to-r from-cyan-600 to-blue-500 shadow-lg' : 'hover:bg-gray-800 hover:translate-x-1' }}">
+                    <i class="fa-solid fa-photo-film w-5"></i>
+                    <span class="font-medium">Media</span>
+                </a>
+
+                <a href="{{ route('admin.ratings.index') }}"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all {{ request()->routeIs('admin.ratings*') ? 'bg-gradient-to-r from-yellow-600 to-orange-600 shadow-lg' : 'hover:bg-gray-800 hover:translate-x-1' }}">
+                    <i class="fa-solid fa-star w-5"></i>
+                    <span class="font-medium">Opinie</span>
+                    @php
+                        $pendingRatings = \App\Models\Rating::where('is_approved', false)->count();
+                    @endphp
+                    @if($pendingRatings > 0)
+                        <span class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">{{ $pendingRatings }}</span>
+                    @endif
+                </a>
+
+                <a href="{{ route('admin.verifications.index') }}"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all {{ request()->routeIs('admin.verifications*') ? 'bg-gradient-to-r from-blue-600 to-cyan-600 shadow-lg' : 'hover:bg-gray-800 hover:translate-x-1' }}">
+                    <i class="fa-solid fa-shield-halved w-5"></i>
+                    <span class="font-medium">Weryfikacje</span>
+                    @php
+                        $pendingVerifications = \App\Models\User::where('verification_status', 'pending')->count();
+                    @endphp
+                    @if($pendingVerifications > 0)
+                        <span class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">{{ $pendingVerifications }}</span>
+                    @endif
                 </a>
             </nav>
-            <div class="p-4 border-t border-gray-800">
+            <div class="p-4 border-t border-gray-700">
+                <a href="{{ route('home') }}" target="_blank"
+                   class="flex items-center gap-3 px-4 py-3 mb-2 rounded-lg hover:bg-gray-800 transition-all">
+                    <i class="fa-solid fa-arrow-up-right-from-square w-5"></i>
+                    <span class="font-medium">Zobacz stronę</span>
+                </a>
                 <form method="POST" action="{{ route('admin.logout') }}">
                     @csrf
-                    <button type="submit" class="w-full px-4 py-3 text-left rounded-lg hover:bg-gray-800">
-                        🚪 Wyloguj
+                    <button type="submit"
+                            class="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-900 hover:text-white transition-all text-red-400">
+                        <i class="fa-solid fa-right-from-bracket w-5"></i>
+                        <span class="font-medium">Wyloguj się</span>
                     </button>
                 </form>
             </div>
