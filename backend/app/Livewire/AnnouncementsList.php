@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Announcement;
 use App\Models\Category;
 use App\Models\Tag;
+use App\Livewire\Concerns\TracksEvents;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Url;
@@ -12,6 +13,7 @@ use Livewire\Attributes\Url;
 class AnnouncementsList extends Component
 {
     use WithPagination;
+    use TracksEvents;
 
     #[Url(as: 'q')]
     public $search = '';
@@ -26,6 +28,22 @@ class AnnouncementsList extends Component
     public $maxBudget = '';
 
     public $selectedTags = [];
+
+    public function updatedSearch(): void
+    {
+        $this->trackCurrentSearch();
+    }
+
+    public function updatedCategory(): void
+    {
+        $this->trackCurrentSearch();
+    }
+
+    private function trackCurrentSearch(): void
+    {
+        $category = $this->category ? Category::where('slug', $this->category)->value('name') : null;
+        $this->trackSearch($this->search, $category);
+    }
 
     public function updatingSearch()
     {
@@ -48,7 +66,7 @@ class AnnouncementsList extends Component
         $query = Announcement::select([
                 'id', 'user_id', 'category_id', 'title', 'description',
                 'budget_min', 'budget_max', 'budget_currency', 'location',
-                'deadline', 'is_urgent', 'created_at', 'views_count', 'proposals_count'
+                'deadline', 'is_urgent', 'status', 'created_at', 'views_count', 'proposals_count'
             ])
             ->with([
                 'user:id,name,avatar,is_verified',

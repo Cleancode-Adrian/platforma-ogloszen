@@ -26,11 +26,30 @@ return Application::configure(basePath: dirname(__DIR__))
                 | Request::HEADER_X_FORWARDED_PROTO,
         );
 
+        // Ciasteczka ustawiane w przeglądarce przez skrypty firm trzecich - Laravel
+        // nie może ich odszyfrowywać (dostałby null). Potrzebne do Meta CAPI:
+        // zgoda z Cookiebota oraz identyfikatory Pixela.
+        $middleware->encryptCookies(except: ['CookieConsent', '_fbp', '_fbc', '_ga']);
+
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
         ]);
 
         $middleware->append(SecurityHeaders::class);
+
+        // Źródło wejścia z reklamy (utm_*, fbclid) - zapamiętane w sesji.
+        $middleware->web(append: [App\Http\Middleware\CaptureAttribution::class]);
+
+        // Gość odbity na logowanie z chronionej strony: na stronie logowania
+        // idzie login_wall_view (link_location = skąd przyszedł), żeby było
+        // widać w GA4, ile osób odpada na ścianie logowania.
+        $middleware->redirectGuestsTo(function (Request $request) {
+            if ($request->hasSession() && !$request->expectsJson()) {
+                $request->session()->flash('login_wall', str_replace('/', '_', trim($request->path(), '/')) ?: 'home');
+            }
+
+            return route('login');
+        });
 
         // W Laravelu 11+ throttle:api NIE jest domyślnie włączony.
         $middleware->throttleApi('api');
@@ -40,4 +59,20 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->dontReport([
             Illuminate\Session\TokenMismatchException::class,
         ]);
+
+        // 419 (wygasła sesja / stary token CSRF w formularzu): zamiast martwej
+        // strony "Page Expired" wracamy do formularza z wpisanymi danymi
+        // (bez haseł) i świeżym tokenem - użytkownik klika jeszcze raz.
+        // Livewire i zapytania JSON obsługują 419 po swojemu, więc ich nie ruszamy.
+        $exceptions->render(function (Symfony\Component\HttpKernel\Exception\HttpException $e, Request $request) {
+            if ($e->getStatusCode() !== 419 || $request->expectsJson() || $request->hasHeader('X-Livewire')) {
+                return null;
+            }
+
+            $fallback = $request->is('admin/*') ? '/admin/login' : $request->path();
+
+            return redirect()->to(url()->previous() !== $request->fullUrl() ? url()->previous() : url($fallback))
+                ->withInput($request->except(['password', 'password_confirmation', 'current_password', '_token']))
+                ->withErrors(['email' => 'Sesja wygasła. Kliknij przycisk jeszcze raz - dane formularza zostały zachowane (poza hasłem).']);
+        });
     })->create();

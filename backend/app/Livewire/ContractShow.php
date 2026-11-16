@@ -4,10 +4,12 @@ namespace App\Livewire;
 
 use App\Models\Contract;
 use App\Models\Notification;
+use App\Livewire\Concerns\TracksEvents;
 use Livewire\Component;
 
 class ContractShow extends Component
 {
+    use TracksEvents;
     public Contract $contract;
 
     public $newTitle = '';
@@ -47,6 +49,11 @@ class ContractShow extends Component
 
     public function addMilestone()
     {
+        // Admin może podglądać kontrakt, ale etapy dodają tylko strony umowy.
+        if (!$this->isClient() && !$this->isFreelancer()) {
+            return;
+        }
+
         if ($this->contract->status !== 'active') {
             $this->dispatch('notify', message: 'Kontrakt jest zakończony', type: 'error');
             return;
@@ -134,6 +141,7 @@ class ContractShow extends Component
 
         $this->contract->refreshStatus();
         $this->loadContract();
+        $this->trackEvent('approve_milestone');
         $this->dispatch('notify', message: 'Etap zatwierdzony', type: 'success');
     }
 

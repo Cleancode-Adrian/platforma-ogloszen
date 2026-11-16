@@ -4,10 +4,16 @@ namespace App\Livewire;
 
 use App\Models\Proposal;
 use App\Models\Announcement;
+use Livewire\Attributes\Locked;
+use App\Livewire\Concerns\TracksEvents;
 use Livewire\Component;
 
 class ProposalsList extends Component
 {
+    use TracksEvents;
+    // Locked: bez tego klient mógł podmienić ID w żądaniu Livewire i wywołać
+    // loadProposals() dla cudzego ogłoszenia (uprawnienia sprawdzane są tylko w mount()).
+    #[Locked]
     public $announcementId;
     public $proposals;
 
@@ -41,8 +47,14 @@ class ProposalsList extends Component
         $proposal = Proposal::findOrFail($proposalId);
 
         // Tylko właściciel ogłoszenia może akceptować oferty (nie administrator)
-        if ($proposal->announcement->user_id !== auth()->id()) {
+        if ((int) $proposal->announcement_id !== (int) $this->announcementId
+            || $proposal->announcement->user_id !== auth()->id()) {
             $this->dispatch('notify', message: 'Tylko właściciel ogłoszenia może akceptować oferty', type: 'error');
+            return;
+        }
+
+        if ($proposal->status !== 'pending') {
+            $this->dispatch('notify', message: 'Oferta już została rozpatrzona', type: 'error');
             return;
         }
 
@@ -58,6 +70,13 @@ class ProposalsList extends Component
             ->update(['status' => 'rejected', 'rejected_at' => now()]);
 
         $this->loadProposals();
+        $this->trackEvent('accept_proposal');
+        // GA4: lead domknięty - zleceniodawca wybrał wykonawcę (kluczowe zdarzenie).
+        $this->trackEvent('close_convert_lead', [
+            'lead_type' => 'zlecenie',
+            'value' => (float) $proposal->price,
+            'currency' => $proposal->currency ?: 'PLN',
+        ]);
         $this->dispatch('notify', message: 'Oferta zaakceptowana!', type: 'success');
     }
 
@@ -66,8 +85,14 @@ class ProposalsList extends Component
         $proposal = Proposal::findOrFail($proposalId);
 
         // Tylko właściciel ogłoszenia może odrzucać oferty (nie administrator)
-        if ($proposal->announcement->user_id !== auth()->id()) {
+        if ((int) $proposal->announcement_id !== (int) $this->announcementId
+            || $proposal->announcement->user_id !== auth()->id()) {
             $this->dispatch('notify', message: 'Tylko właściciel ogłoszenia może odrzucać oferty', type: 'error');
+            return;
+        }
+
+        if ($proposal->status !== 'pending') {
+            $this->dispatch('notify', message: 'Oferta już została rozpatrzona', type: 'error');
             return;
         }
 

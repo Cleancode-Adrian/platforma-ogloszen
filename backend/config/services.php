@@ -35,14 +35,28 @@ return [
         ],
     ],
 
-    'recaptcha' => [
-        'site_key' => env('RECAPTCHA_SITE_KEY'),
-        'secret_key' => env('RECAPTCHA_SECRET_KEY'),
-        'min_score_login' => (float) env('RECAPTCHA_MIN_SCORE_LOGIN', 0.7),
-        'min_score_register' => (float) env('RECAPTCHA_MIN_SCORE_REGISTER', 0.6),
-        'min_score_admin_login' => (float) env('RECAPTCHA_MIN_SCORE_ADMIN_LOGIN', 0.8),
-        // Optional: lock verification to a single hostname (e.g. "projekciarz.pl")
-        'expected_hostname' => env('RECAPTCHA_EXPECTED_HOSTNAME'),
+    // Baner zgód na cookies (Cookiebot CMP). Pusta wartość wyłącza skrypt.
+    'cookiebot' => [
+        'cbid' => env('COOKIEBOT_CBID', 'fc720780-9d1c-4e63-a0c4-204d38173953'),
+        // Język banera wymuszony na polski (bez tego Cookiebot zgaduje z przeglądarki).
+        'culture' => env('COOKIEBOT_CULTURE', 'PL'),
+    ],
+
+    // GA4 Measurement Protocol - zdarzenia z serwera (qualify_lead po akceptacji
+    // zlecenia przez admina). Bez api_secret wysyłka jest wyłączona.
+    'ga4' => [
+        'measurement_id' => env('GA4_MEASUREMENT_ID', 'G-XY55LLSQMQ'),
+        'api_secret' => env('GA4_API_SECRET'),
+    ],
+
+    // Meta Pixel. Wysyła dane dopiero po zgodzie marketingowej w Cookiebot.
+    'meta_pixel' => [
+        'id' => env('META_PIXEL_ID', '1128855549687710'),
+        // Conversions API - bez tokenu wysyłka z serwera jest wyłączona.
+        'capi_token' => env('META_CAPI_TOKEN'),
+        // Kod z Menedżera zdarzeń -> Testuj zdarzenia (tylko na czas testów).
+        'capi_test_code' => env('META_CAPI_TEST_CODE'),
+        'graph_version' => env('META_GRAPH_VERSION', 'v21.0'),
     ],
 
 ];

@@ -5,16 +5,23 @@ namespace App\Livewire;
 use App\Events\MessageSent;
 use App\Models\Message;
 use App\Models\User;
+use Illuminate\Support\Facades\RateLimiter;
+use App\Livewire\Concerns\TracksEvents;
 use Livewire\Component;
 
 class ShowMessages extends Component
 {
+    use TracksEvents;
     public User $otherUser;
     public $messages;
     public $content = '';
 
     public function mount(User $user)
     {
+        if ($user->id === auth()->id()) {
+            abort(404);
+        }
+
         $this->otherUser = $user;
         $this->loadMessages();
         $this->markAsRead();
@@ -41,14 +48,7 @@ class ShowMessages extends Component
     {
         $userId = auth()->id();
 
-        $this->messages = Message::where(function($query) use ($userId) {
-                $query->where('sender_id', $userId)
-                      ->where('receiver_id', $this->otherUser->id);
-            })
-            ->orWhere(function($query) use ($userId) {
-                $query->where('sender_id', $this->otherUser->id)
-                      ->where('receiver_id', $userId);
-            })
+        $this->messages = Message::between($userId, $this->otherUser->id)
             ->with(['sender', 'receiver'])
             ->orderBy('created_at', 'asc')
             ->get();
@@ -73,6 +73,15 @@ class ShowMessages extends Component
             'content.required' => 'Wiadomość nie może być pusta',
             'content.max' => 'Wiadomość może mieć maksymalnie 1000 znaków',
         ]);
+
+        // Każda wiadomość wysyła e-mail do odbiorcy - bez limitu jedno konto
+        // mogło zasypać skrzynkę dowolnego użytkownika (i limit SMTP serwera).
+        $rateKey = 'send-message:' . auth()->id();
+        if (RateLimiter::tooManyAttempts($rateKey, 10)) {
+            $this->addError('content', 'Wysyłasz wiadomości zbyt szybko. Spróbuj ponownie za ' . RateLimiter::availableIn($rateKey) . ' s.');
+            return;
+        }
+        RateLimiter::hit($rateKey, 60);
 
         $message = Message::create([
             'sender_id' => auth()->id(),
@@ -105,6 +114,8 @@ class ShowMessages extends Component
         $this->content = '';
         $this->loadMessages();
 
+        $this->trackEvent('send_message');
+        $this->trackFb('Contact');
         $this->dispatch('notify', message: 'Wiadomość wysłana!', type: 'success');
         $this->dispatch('scroll-to-bottom');
     }

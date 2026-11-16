@@ -5,14 +5,21 @@ namespace App\Livewire;
 use App\Models\Announcement;
 use App\Models\Category;
 use App\Models\SavedSearch;
+use App\Livewire\Concerns\TracksEvents;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class AdvancedSearch extends Component
 {
     use WithPagination;
+    use TracksEvents;
 
+    // W URL-u, żeby wyszukiwanie dało się podlinkować i zmierzyć przy wejściu.
+    #[Url(as: 'q')]
     public $search = '';
+
+    #[Url(as: 'kategoria')]
     public $category_id = '';
     public $budget_min = '';
     public $budget_max = '';
@@ -34,6 +41,22 @@ class AdvancedSearch extends Component
         if (auth()->check()) {
             $this->savedSearches = auth()->user()->savedSearches()->latest()->get();
         }
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->trackCurrentSearch();
+    }
+
+    public function updatedCategoryId(): void
+    {
+        $this->trackCurrentSearch();
+    }
+
+    private function trackCurrentSearch(): void
+    {
+        $category = $this->category_id ? $this->categories->firstWhere('id', (int) $this->category_id)?->name : null;
+        $this->trackSearch($this->search, $category);
     }
 
     public function updatingSearch()
@@ -208,6 +231,7 @@ class AdvancedSearch extends Component
         $this->showSaveForm = false;
         $this->savedSearches = auth()->user()->savedSearches()->latest()->get();
 
+        $this->trackEvent('save_search');
         session()->flash('success', 'Wyszukiwanie zostało zapisane!');
     }
 

@@ -22,15 +22,26 @@ return [
     | Każdy nowy skrypt/CDN trzeba tu dopisać, inaczej przeglądarka go zablokuje.
     */
     'csp_sources' => [
+        // Google: wildcardy, bo GA4 dla ruchu z UE używa subdomen regionalnych
+        // (region1.google-analytics.com), a GTM z włączonym server-side/consent
+        // potrafi doładować skrypty z innych hostów niż www. Wpisy doubleclick /
+        // googleadservices są pod przyszłe Google Ads (konwersje, remarketing).
         'script' => [
-            'https://www.googletagmanager.com',
-            'https://www.google-analytics.com',
+            'https://*.googletagmanager.com',
+            'https://*.google-analytics.com',
             'https://www.google.com',
             'https://www.gstatic.com',
+            'https://googleads.g.doubleclick.net',
+            'https://www.googleadservices.com',
             'https://cdnjs.cloudflare.com',
             'https://groot.mailerlite.com',
             'https://assets.mailerlite.com',
             'https://assets.mlcdn.com',
+            // Cookiebot CMP (uc.js + skrypty banera i deklaracji)
+            'https://consent.cookiebot.com',
+            'https://consentcdn.cookiebot.com',
+            // Meta Pixel
+            'https://connect.facebook.net',
         ],
         'style' => [
             'https://cdnjs.cloudflare.com',
@@ -45,15 +56,27 @@ return [
             'https://assets.mlcdn.com',
         ],
         'connect' => [
-            'https://www.google-analytics.com',
-            'https://www.googletagmanager.com',
-            'https://analytics.google.com',
+            'https://*.google-analytics.com',
+            'https://*.analytics.google.com',
+            'https://*.googletagmanager.com',
+            'https://*.g.doubleclick.net',
+            'https://*.google.com',
+            'https://google.com',
+            'https://www.google.pl',
+            'https://www.googleadservices.com',
+            'https://www.facebook.com',
+            'https://connect.facebook.net',
             'https://assets.mailerlite.com',
             'https://groot.mailerlite.com',
+            'https://consent.cookiebot.com',
+            'https://consentcdn.cookiebot.com',
         ],
         'frame' => [
             'https://www.google.com',
-            'https://www.googletagmanager.com',
+            'https://*.googletagmanager.com',
+            'https://td.doubleclick.net',
+            'https://*.doubleclick.net',
+            'https://consentcdn.cookiebot.com',
         ],
     ],
 
@@ -89,6 +112,19 @@ return [
     */
 
     'auto_approve_clients' => env('AUTO_APPROVE_CLIENTS', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Formularz zlecenia dla gości ("najpierw projekt, konto na końcu")
+    |--------------------------------------------------------------------------
+    |
+    | true: gość z reklamy od razu widzi formularz zlecenia, opisuje projekt,
+    | a konto zakłada (albo loguje się) w ostatnim kroku, tuż przed publikacją.
+    | false: stare zachowanie - /announcements/create wymaga logowania.
+    |
+    */
+
+    'guest_announcement_form' => env('GUEST_ANNOUNCEMENT_FORM', true),
 
     /*
     |--------------------------------------------------------------------------

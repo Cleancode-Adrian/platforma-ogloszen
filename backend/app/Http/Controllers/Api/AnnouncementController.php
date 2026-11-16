@@ -45,6 +45,11 @@ class AnnouncementController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user || !($user->isClient() || $user->isAdmin())) {
+            return response()->json(['message' => 'Zlecenia mogą dodawać tylko zleceniodawcy.'], 403);
+        }
+
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'title' => 'required|string|max:255',
@@ -54,7 +59,8 @@ class AnnouncementController extends Controller
             'deadline' => 'nullable|string|max:100',
             'location' => 'nullable|string|max:255',
             'is_urgent' => 'boolean',
-            'tags' => 'nullable|array',
+            'tags' => 'nullable|array|max:10',
+            'tags.*' => 'integer|exists:tags,id',
         ]);
 
         $announcement = $request->user()->announcements()->create([
